@@ -1,7 +1,3 @@
-/*
-g++ -o lab1 lab1.cpp -Iinclude
-*/
-
 #include <glm/vec3.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat3x3.hpp>
