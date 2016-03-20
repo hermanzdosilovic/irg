@@ -10,9 +10,18 @@ std::ostream &operator<< (std::ostream &out, const glm::vec3 &v) {
 }
 
 std::ostream &operator<< (std::ostream &out, const glm::mat3x3 &m) {
-  out << "{" << "(" << m[0][0] << ", " << m[0][1] << ", " << m[0][2] << ")"
-      << ", " << "(" << m[1][0] << ", " << m[1][1] << ", " << m[1][2] << ")"
-      << ", " << "(" << m[2][0] << ", " << m[2][1] << ", " << m[2][2] << ")" << "}";
+  out << "{";
+  for (int row = 0; row < 3; row++) {
+    out << "(";
+    for (int col = 0; col < 3; col++) {
+      out << m[col][row];
+      if (col + 1 != 3) out << ", ";
+    }
+    out << ")";
+    if (row + 1 != 3) out << ", ";
+  }
+  out << "}";
+
   return out;
 }
 
@@ -31,9 +40,9 @@ int main() {
 
   glm::vec3 v4 = -1.0f * v2;
   std::cout << "v4 = " << v4 << std::endl;
-
-  glm::mat3x3 A = glm::mat3x3(1, 2, 3, 2, 1, 3, 4, 5, 1);
-  glm::mat3x3 B = glm::mat3x3(-1, 2, -3, 5, -2, 7, -4, -1, 3);
+  
+  glm::mat3x3 A = glm::mat3x3(1, 2, 4, 2, 1, 5, 3, 3, 1);
+  glm::mat3x3 B = glm::mat3x3(-1, 5, -4, 2, -2, -1, -3, 7, 3);
   glm::mat3x3 M1 = A + B;
   std::cout << "M1 = " << M1 << std::endl;
 

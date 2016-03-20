@@ -35,7 +35,7 @@ int main() {
   scanf("%f %f %f", &Cx, &Cy, &Cz);
   scanf("%f %f %f", &Tx, &Ty, &Tz);
 
-  glm::mat3x3 M1 = glm::mat3x3( // column major matrices
+  glm::mat3x3 M1 = glm::mat3x3( // column-major order
     Ax, Ay, Az,
     Bx, By, Bz,
     Cx, Cy, Cz

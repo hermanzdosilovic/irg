@@ -8,6 +8,9 @@ int main() {
     std::cin >> coeff[i];
   }
   
+  // glm uses column-major order
+  // but det(A^T) = det(A) so we can use row-major order
+
   glm::mat3x3 D = glm::mat3x3(
     coeff[0], coeff[1], coeff[2],
     coeff[4], coeff[5], coeff[6],
