@@ -39,11 +39,6 @@ void bresenham() {
     printf("(45, 90]\n");
     T[0] = {T[0].y, T[0].x};
     T[1] = {T[1].y, T[1].x};
-    if (T[0].x > T[1].x) {
-      Point X = T[0];
-      T[0] = T[1];
-      T[1] = X;
-    }
     double k = dx/dy;
     int yc = T[0].y;
     double yf = -0.5;
@@ -92,21 +87,6 @@ void bresenham() {
   glEnd();
 }
 
-void display() {
-  glViewport(0, 0, WIDTH, HEIGHT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	gluOrtho2D(0, WIDTH, HEIGHT, 0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glFlush();
-}
-
 void mouse(int button, int state, int x, int y) {
   if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN) {
     return;
@@ -134,6 +114,21 @@ void mouse(int button, int state, int x, int y) {
   // bresenham's algorithm
   bresenham();
 
+  glFlush();
+}
+
+void display() {
+  glViewport(0, 0, WIDTH, HEIGHT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluOrtho2D(0, WIDTH, HEIGHT, 0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
   glFlush();
 }
 
