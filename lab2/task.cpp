@@ -10,21 +10,46 @@ int idx; // remember when to draw a line
 const int WIDTH = 500, HEIGHT = 500;
 
 void bresenham() {
-  double k = (T[1].y - T[0].y)/(double)(T[1].x - T[0].x);
-  int yc = T[0].y;
-  double yf = -0.5;
-
-  printf("%f\n", k);
+  if (T[0].x > T[1].x) {
+    Point X = T[0];
+    T[0] = T[1];
+    T[1] = X;
+  }
+  
   glColor3f(1.0f, 0.0f, 0.0f);
   glBegin(GL_POINTS);
-  for (int xi = T[0].x; xi <= T[1].x; xi++) {
-    glVertex2i(xi, yc);
-    yf += k;
-    if (yf >= 0) {
-      yc++;
-      yf -= 1;
+
+  double dx = (T[1].x - T[0].x);
+  double dy = (T[1].y - T[0].y);
+  
+  if (dx >= dy) {
+    double k = dy/dx;
+    int yc = T[0].y;
+    double yf = -0.5;
+    for (int xi = T[0].x; xi <= T[1].x; xi++) {
+      glVertex2i(xi, yc);
+      yf += k;
+      if (yf >= 0) {
+        yc++;
+        yf -= 1;
+      }
+    }
+  } else {
+    T[0] = {T[0].y, T[0].x};
+    T[1] = {T[1].y, T[1].x};
+    double k = dx/dy;
+    int yc = T[0].y;
+    double yf = -0.5;
+    for (int xi = T[0].x; xi <= T[1].x; xi++) {
+      glVertex2i(yc, xi);
+      yf += k;
+      if (yf >= 0) {
+        yc++;
+        yf -= 1;
+      }
     }
   }
+
   glEnd();
 }
 
