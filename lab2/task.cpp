@@ -9,6 +9,18 @@ int idx; // remember when to draw a line
 
 const int WIDTH = 500, HEIGHT = 500;
 
+void bresenham() {
+  double k = (T[1].y - T[0].y)/(double)(T[1].x - T[0].x);
+  double yi = T[0].y;
+  glColor3f(1.0f, 0.0f, 0.0f);
+  glBegin(GL_POINTS);
+  for (int xi = T[0].x; xi <= T[1].x; xi++) {
+    glVertex2i(xi, (int) yi);
+    yi += k;
+  }
+  glEnd();
+}
+
 void display() {
   glViewport(0, 0, WIDTH, HEIGHT);
 
@@ -36,16 +48,20 @@ void mouse(int button, int state, int x, int y) {
     return; // wait for another point
   }
   
-  glPointSize(1.0);
-  glColor3f(0.0f, 0.0f, 0.0f);
   
   printf("Line from (%d, %d) to (%d, %d)\n",
     T[0].x, T[0].y, T[1].x, T[1].y);
-
+  
+  // built-in function
+  glPointSize(1.0);
+  glColor3f(0.0f, 0.0f, 0.0f);
   glBegin(GL_LINES);
   glVertex2i(T[0].x, T[0].y + 20);
   glVertex2i(T[1].x, T[1].y + 20);
   glEnd();
+
+  // bresenham's algorithm
+  bresenham();
 
   glFlush();
 }
