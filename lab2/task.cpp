@@ -22,7 +22,8 @@ void bresenham() {
   double dx = (T[1].x - T[0].x);
   double dy = (T[1].y - T[0].y);
   
-  if (dx >= dy) {
+  if (dx >= dy && dy > 0) {
+    printf("[0, 45]\n");
     double k = dy/dx;
     int yc = T[0].y;
     double yf = -0.5;
@@ -34,9 +35,15 @@ void bresenham() {
         yf -= 1;
       }
     }
-  } else {
+  } else if (dx < dy && dy > 0) {
+    printf("(45, 90]\n");
     T[0] = {T[0].y, T[0].x};
     T[1] = {T[1].y, T[1].x};
+    if (T[0].x > T[1].x) {
+      Point X = T[0];
+      T[0] = T[1];
+      T[1] = X;
+    }
     double k = dx/dy;
     int yc = T[0].y;
     double yf = -0.5;
@@ -48,8 +55,40 @@ void bresenham() {
         yf -= 1;
       }
     }
+  } else if (dx >= -dy) {
+    printf("[-45, 0)\n");
+    double k = dy/dx;
+    int yc = T[0].y;
+    double yf = 0.5;
+    for (int xi = T[0].x; xi <= T[1].x; xi++) {
+      glVertex2i(xi, yc);
+      yf += k;
+      if (yf <= 0) {
+        yc--;
+        yf += 1;
+      }
+    }
+  } else {
+    printf("[-90, -45)\n");
+    T[0] = {T[0].y, T[0].x};
+    T[1] = {T[1].y, T[1].x};
+    if (T[0].x > T[1].x) {
+      Point X = T[0];
+      T[0] = T[1];
+      T[1] = X;
+    }
+    double k = dx/dy;
+    int yc = T[0].y;
+    double yf = 0.5;
+    for (int xi = T[0].x; xi <= T[1].x; xi++) {
+      glVertex2i(yc, xi);
+      yf += k;
+      if (yf <= 0) {
+        yc--;
+        yf += 1;
+      }
+    }
   }
-
   glEnd();
 }
 
@@ -81,7 +120,7 @@ void mouse(int button, int state, int x, int y) {
   }
   
   
-  printf("Line from (%d, %d) to (%d, %d)\n",
+  printf("Line from (%d, %d) to (%d, %d) ",
     T[0].x, T[0].y, T[1].x, T[1].y);
   
   // built-in function
