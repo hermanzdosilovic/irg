@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-std=c++11
-LDFLAGS=-Iglm
+LDFLAGS=-I ../lib/glm/
 
 all: task1 task2 task3
 

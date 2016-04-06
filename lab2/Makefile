@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-std=c++11
-LDFLAGS=-lGL -lGLU -lglut -Ifreeglut-3.0.0/include/GL
+LDFLAGS=-lGL -lGLU -lglut -I ../lib/freeglut-3.0.0/include/GL
 
 all: bresenham task
 
