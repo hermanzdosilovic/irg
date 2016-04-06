@@ -12,14 +12,13 @@ void drawLine(int x1, int y1, int x2, int y2) {
     swap(&y1, &y2);
   }
   
-  glColor3f(1.0f, 0.0f, 0.0f);
+  glColor3f(0.0f, 0.0f, 1.0f);
   glBegin(GL_POINTS);
 
   double dx = (x2 - x1);
   double dy = (y2 - y1);
   
   if (dx >= dy && dy > 0) {
-    printf("[0, 45]\n");
     double k = dy/dx;
     int yc = y1;
     double yf = -0.5;
@@ -32,7 +31,6 @@ void drawLine(int x1, int y1, int x2, int y2) {
       }
     }
   } else if (dx < dy && dy > 0) {
-    printf("(45, 90]\n");
     swap(&x1, &y1);
     swap(&x2, &y2);
     double k = dx/dy;
@@ -47,7 +45,6 @@ void drawLine(int x1, int y1, int x2, int y2) {
       }
     }
   } else if (dx >= -dy) {
-    printf("[-45, 0)\n");
     double k = dy/dx;
     int yc = y1;
     double yf = 0.5;
@@ -60,7 +57,6 @@ void drawLine(int x1, int y1, int x2, int y2) {
       }
     }
   } else {
-    printf("[-90, -45)\n");
     swap(&x1, &y1);
     swap(&x2, &y2);
     if (x1 > x2) {

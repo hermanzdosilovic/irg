@@ -2,51 +2,68 @@
 #include <GL/freeglut.h>
 #include "bresenham.h"
 
+const int kMaxNumberOfVertices = 50;
+const int kMaxNumberOfPolygons = 50;
+const int kWidth = 500, kHeight = 500;
+
 struct Point {
   int x, y;
-} T[2];
+} g_vertices[kMaxNumberOfPolygons + 1][kMaxNumberOfVertices + 1];
 
-int idx; // remember when to draw a line
+int g_number_of_vertices;
+int g_number_of_polygons;
 
-const int WIDTH = 500, HEIGHT = 500;
+Point g_point;
 
-void mouse(int button, int state, int x, int y) {
-  if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN) {
+void drawPolygon(Point *vertices, int number_of_vertices) {
+  if (number_of_vertices == 0) {
     return;
   }
 
-  T[idx] = {x, y};
-  idx = (idx + 1)%2;
-
-  if (idx != 0) {
-    return; // wait for another point
+  for (int i = 0; i < number_of_vertices - 1; i++) {
+    drawLine(vertices[i].x, vertices[i].y, vertices[i + 1].x, vertices[i + 1].y);
   }
-  
-  
-  printf("Line from (%d, %d) to (%d, %d) ",
-    T[0].x, T[0].y, T[1].x, T[1].y);
-  
-  // built-in function
-  glPointSize(1.0);
-  glColor3f(0.0f, 0.0f, 0.0f);
-  glBegin(GL_LINES);
-  glVertex2i(T[0].x, T[0].y + 20);
-  glVertex2i(T[1].x, T[1].y + 20);
-  glEnd();
 
-  // bresenham's algorithm
-  drawLine(T[0].x, T[0].y, T[1].x, T[1].y);
+  drawLine(
+    vertices[number_of_vertices - 1].x,
+    vertices[number_of_vertices - 1].y,
+    vertices[0].x,
+    vertices[0].y
+  );
+}
 
-  glFlush();
+void addPoint(int x, int y) {
+  if (g_number_of_vertices + 1 > kMaxNumberOfVertices) {
+    printf("Maximum number of vertices exceeded!\n");
+    return;
+  }
+  g_vertices[g_number_of_polygons][g_number_of_vertices++] = {x, y};
+}
+
+void mouse(int button, int state, int x, int y) {
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    addPoint(x, y);
+  } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+    if (g_number_of_polygons + 1 > kMaxNumberOfVertices) {
+      printf("Maximum number of polygons exceeded!\n");
+      return;
+    }
+    printf("Drawing polygon P%d.\n", g_number_of_polygons);
+    drawPolygon(g_vertices[g_number_of_polygons++], g_number_of_vertices);
+
+    g_number_of_vertices = 0;
+  } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
+    g_point = {x, y};
+  }
 }
 
 void display() {
-  glViewport(0, 0, WIDTH, HEIGHT);
+  glViewport(0, 0, kWidth, kHeight);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
-	gluOrtho2D(0, WIDTH, HEIGHT, 0);
+	gluOrtho2D(0, kWidth, kHeight, 0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -61,7 +78,7 @@ int main(int argc, char **argv) {
   glutInitWindowSize(500, 500);
   glutInitWindowPosition(200, 200); 
   
-  glutCreateWindow("Bresenham");
+  glutCreateWindow("Polygon");
   glutDisplayFunc(display);
   glutMouseFunc(mouse);
   glutMainLoop();
