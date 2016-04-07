@@ -12,6 +12,7 @@ void drawLine(int x1, int y1, int x2, int y2) {
     swap(&y1, &y2);
   }
   
+  glPointSize(1);  
   glColor3f(0.0f, 0.0f, 1.0f);
   glBegin(GL_POINTS);
 

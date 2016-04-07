@@ -3,8 +3,8 @@
 #include <glm/vec3.hpp>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include "bresenham.h"
 #include "polygon.h"
+#include "polyartist.h"
 
 const int kMaxNumberOfPolygons = 50;
 const int kWidth = 500, kHeight = 500;
@@ -17,21 +17,6 @@ std::ostream &operator<< (std::ostream &out, const glm::vec3 &v) {
   return out;
 }
 
-int drawPolygon(Polygon polygon) {
-  int N = polygon.NumberOfVertices();
-  if (N == 0) {
-    return -1;
-  }
-  
-  for (int i = 0; i < N; i++) {
-    glm::vec3 f = polygon.GetVertex(i);
-    glm::vec3 s = polygon.GetVertex((i + 1)%N);
-    drawLine(f.x, f.y, s.x, s.y);
-  }
-
-  return 0;
-}
-
 void mouse(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     g_polygons[g_number_of_polygons].AddVertex(glm::vec3(x, y, 1));
@@ -41,15 +26,21 @@ void mouse(int button, int state, int x, int y) {
       return;
     }
     printf("Drawing polygon P%d.\n", g_number_of_polygons);
-    int ret = drawPolygon(g_polygons[g_number_of_polygons]);
-    if (ret == 0) {
-      printf("  Success.\n");
-      g_number_of_polygons++;
-    } else {
+    if (g_polygons[g_number_of_polygons].NumberOfVertices() == 0) {
       printf("  Failed. Polygon has no vertices.\n");
-    }
+      return;
+    } 
+    printf("  Success.\n");
+    drawPolygon(g_polygons[g_number_of_polygons]);
+    fillPolygon1(g_polygons[g_number_of_polygons++]);
   } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
     glm::vec3 point = glm::vec3(x, y, 1);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glPointSize(3);
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
     std::cout << "Point " << point << " relation with polygons:" << std::endl;
     for (int i = 0; i < g_number_of_polygons; i++) {
       int is_inside = g_polygons[i].PointRelation(point);
