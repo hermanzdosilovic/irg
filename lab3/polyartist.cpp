@@ -13,6 +13,8 @@ void drawPolygon(Polygon polygon) {
   int N = polygon.NumberOfVertices();
   
   glm::vec3 first, second;
+  glPointSize(1);
+  glColor3f(0.0f, 0.0f, 1.0f);
   for (int i = 0; i < N; i++) {
     first = polygon.GetVertex(i);
     second = polygon.GetVertex((i + 1)%N);
@@ -37,7 +39,7 @@ void fillPolygon1(Polygon polygon) {
   
   for (int y = minY; y <= maxY; y++) {
     glm::vec3 line = glm::cross(glm::vec3(0, y, 1), glm::vec3(1, y, 1));
-    int x[N + 1], intersection_count = 0;
+    int L = -1, R = 1 << 30;
     for (int i = 0; i < N; i++) {
       glm::vec3 edge = polygon.GetEdge(i);
       glm::mat2x2 coeff = glm::mat2x2(line.x, edge.x, line.y, edge.y);
@@ -46,23 +48,17 @@ void fillPolygon1(Polygon polygon) {
       glm::vec3 v1 = polygon.GetVertex(i);
       glm::vec3 v2 = polygon.GetVertex((i + 1)%N);
   
-      int ix = intersection.x;
-      if (ix >= v1.x && ix <= v2.x) {
-        x[intersection_count++] = ix;
-      } else if (ix >= v2.x && ix <= v1.x) {
-        x[intersection_count++] = ix;
+      if (v1.y >= v2.y && intersection.x > L) {
+        L = intersection.x;
+      } else if (v1.y < v2.y && intersection.x < R) {
+        R = intersection.x;
       }
     }
-
-    if (intersection_count >= 2) {
-      std::sort(x, x + intersection_count);
-      glPointSize(1);
+  
+    glPointSize(1);
+    if (L < R) {
       glColor3f(1.0f, 0.0f, 0.0f);
-      glBegin(GL_POINTS);
-      for (int xi = x[0]; xi <= x[intersection_count - 1]; xi++) {
-        glVertex2i(xi, y);
-      }
-      glEnd();
+      drawLine(L, y, R, y);
     }
   }
   glFlush();

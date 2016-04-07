@@ -36,7 +36,7 @@ void mouse(int button, int state, int x, int y) {
   } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
     glm::vec3 point = glm::vec3(x, y, 1);
     glColor3f(0.0f, 0.0f, 0.0f);
-    glPointSize(3);
+    glPointSize(2);
     glBegin(GL_POINTS);
     glVertex2i(x, y);
     glEnd();
