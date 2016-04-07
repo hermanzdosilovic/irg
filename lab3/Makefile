@@ -3,10 +3,10 @@ CFLAGS=-std=c++11
 LDFLAGS=-lGL -lGLU -lglut -I ../lib/glm/
 
 ODIR=obj
-_OBJ=task.o bresenham.o
+_OBJ=task.o bresenham.o polygon.o
 OBJ=$(patsubst %,$(ODIR)/%,$(_OBJ))
 
-DEPS=bresenham.h
+DEPS=bresenham.h polygon.h
 EXECUTABLE=task
 
 DIRS=$(ODIR)
