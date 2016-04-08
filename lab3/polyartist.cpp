@@ -61,5 +61,4 @@ void fillPolygon1(Polygon polygon) {
       drawLine(L, y, R, y);
     }
   }
-  glFlush();
 }

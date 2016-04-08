@@ -1,13 +1,13 @@
-#include <stdio.h>
+#include <iostream>
+#include <cstdio>
 #include <GL/freeglut.h>
 #include <glm/vec3.hpp>
 #include <glm/geometric.hpp>
-#include <iostream>
 #include "polygon.h"
 #include "polyartist.h"
 
 const int kMaxNumberOfPolygons = 50;
-const int kWidth = 500, kHeight = 500;
+int g_width = 500, g_height = 500;
 
 Polygon g_polygons[kMaxNumberOfPolygons + 1];
 int g_number_of_polygons;
@@ -33,6 +33,7 @@ void mouse(int button, int state, int x, int y) {
     printf("  Success.\n");
     drawPolygon(g_polygons[g_number_of_polygons]);
     fillPolygon1(g_polygons[g_number_of_polygons++]);
+    glutSwapBuffers();
   } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
     glm::vec3 point = glm::vec3(x, y, 1);
     glColor3f(0.0f, 0.0f, 0.0f);
@@ -40,7 +41,7 @@ void mouse(int button, int state, int x, int y) {
     glBegin(GL_POINTS);
     glVertex2i(x, y);
     glEnd();
-    glFlush();
+    glutSwapBuffers();
     std::cout << "Point " << point << " relation with polygons:" << std::endl;
     for (int i = 0; i < g_number_of_polygons; i++) {
       int is_inside = g_polygons[i].PointRelation(point);
@@ -50,28 +51,55 @@ void mouse(int button, int state, int x, int y) {
 }
 
 void display() {
-  glViewport(0, 0, kWidth, kHeight);
+  glViewport(0, 0, g_width, g_height);
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
-	gluOrtho2D(0, kWidth, kHeight, 0);
+	gluOrtho2D(0, g_width, g_height, 0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  glFlush();
+
+  for (int i = 0; i < g_number_of_polygons; i++) {
+    drawPolygon(g_polygons[i]);
+    fillPolygon1(g_polygons[i]);
+  }
+
+  glutSwapBuffers();
+}
+
+void resize(int width, int height) {
+  g_width = width;
+  g_height = height;
 }
 
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowSize(500, 500);
   glutInitWindowPosition(200, 200); 
   
   glutCreateWindow("Polygon");
+
+  if (argc == 2) {
+    FILE *f = fopen(argv[1], "r");
+    fscanf(f, "%d", &g_number_of_polygons);
+    for (int i = 0; i < g_number_of_polygons; i++) {
+      int number_of_polygons;
+      fscanf(f, "%d", &number_of_polygons);
+      while (number_of_polygons--) {
+        int x, y;
+        fscanf(f, "%d %d", &x, &y);
+        g_polygons[i].AddVertex(glm::vec3(x, y, 1));
+      }
+    }
+  }
+
   glutDisplayFunc(display);
+  glutReshapeFunc(resize);
   glutMouseFunc(mouse);
   glutMainLoop();
 
