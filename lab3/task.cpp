@@ -1,16 +1,15 @@
 #include <iostream>
 #include <cstdio>
+#include <vector>
 #include <GL/freeglut.h>
 #include <glm/vec3.hpp>
 #include <glm/geometric.hpp>
 #include "polygon.h"
 #include "polyartist.h"
 
-const int kMaxNumberOfPolygons = 50;
 int g_width = 500, g_height = 500;
 
-Polygon g_polygons[kMaxNumberOfPolygons + 1];
-int g_number_of_polygons;
+std::vector<Polygon> g_polygons;
 
 std::ostream &operator<< (std::ostream &out, const glm::vec3 &v) {
   out << "(" << v.x << ", " << v.y << ")";
@@ -19,20 +18,20 @@ std::ostream &operator<< (std::ostream &out, const glm::vec3 &v) {
 
 void mouse(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-    g_polygons[g_number_of_polygons].AddVertex(glm::vec3(x, y, 1));
-  } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
-    if (g_number_of_polygons + 1 > kMaxNumberOfPolygons) {
-      printf("Maximum number of polygons exceeded!\n");
-      return;
+    if (g_polygons.size() == 0) {
+      g_polygons.push_back(Polygon());
     }
-    printf("Drawing polygon P%d.\n", g_number_of_polygons);
-    if (g_polygons[g_number_of_polygons].NumberOfVertices() == 0) {
+    g_polygons.back().AddVertex(glm::vec3(x, y, 1));
+  } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+    printf("Drawing polygon P%d.\n", (int) g_polygons.size());
+    if (g_polygons.back().NumberOfVertices() == 0) {
       printf("  Failed. Polygon has no vertices.\n");
       return;
     } 
     printf("  Success.\n");
-    drawPolygon(g_polygons[g_number_of_polygons]);
-    fillPolygon1(g_polygons[g_number_of_polygons++]);
+    drawPolygon(g_polygons.back());
+    fillPolygon1(g_polygons.back());
+    g_polygons.push_back(Polygon());
     glutSwapBuffers();
   } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
     glm::vec3 point = glm::vec3(x, y, 1);
@@ -43,7 +42,7 @@ void mouse(int button, int state, int x, int y) {
     glEnd();
     glutSwapBuffers();
     std::cout << "Point " << point << " relation with polygons:" << std::endl;
-    for (int i = 0; i < g_number_of_polygons; i++) {
+    for (int i = 0; i < g_polygons.size(); i++) {
       int is_inside = g_polygons[i].PointRelation(point);
       std::cout << (is_inside ? "  Inside" : "  Outside") << " of polygon P" << i << std::endl;
     }
@@ -62,8 +61,8 @@ void display() {
 
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-
-  for (int i = 0; i < g_number_of_polygons; i++) {
+  
+  for (int i = 0; i < g_polygons.size(); i++) {
     drawPolygon(g_polygons[i]);
     fillPolygon1(g_polygons[i]);
   }
@@ -86,16 +85,20 @@ int main(int argc, char **argv) {
 
   if (argc == 2) {
     FILE *f = fopen(argv[1], "r");
-    fscanf(f, "%d", &g_number_of_polygons);
-    for (int i = 0; i < g_number_of_polygons; i++) {
-      int number_of_polygons;
-      fscanf(f, "%d", &number_of_polygons);
-      while (number_of_polygons--) {
+    int number_of_polygons;
+    fscanf(f, "%d", &number_of_polygons);
+    for (int i = 0; i < number_of_polygons; i++) {
+      int number_of_vertices;
+      fscanf(f, "%d", &number_of_vertices);
+      Polygon polygon;
+      while (number_of_vertices--) {
         int x, y;
         fscanf(f, "%d %d", &x, &y);
-        g_polygons[i].AddVertex(glm::vec3(x, y, 1));
+        polygon.AddVertex(glm::vec3(x, y, 1));
       }
+      g_polygons.push_back(polygon);
     }
+    g_polygons.push_back(Polygon());
   }
 
   glutDisplayFunc(display);
