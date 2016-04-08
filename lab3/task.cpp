@@ -42,7 +42,7 @@ void mouse(int button, int state, int x, int y) {
     glEnd();
     glutSwapBuffers();
     std::cout << "Point " << point << " relation with polygons:" << std::endl;
-    for (int i = 0; i < g_polygons.size(); i++) {
+    for (int i = 0; i < g_polygons.size() - 1; i++) {
       int is_inside = g_polygons[i].PointRelation(point);
       std::cout << (is_inside ? "  Inside" : "  Outside") << " of polygon P" << i << std::endl;
     }
