@@ -28,7 +28,7 @@ void mouse(int button, int state, int x, int y) {
     if (g_polygons.back().NumberOfVertices() == 0) {
       printf("  Failed. Polygon has no vertices.\n");
       return;
-    } 
+    }
     printf("  Success.\n");
     drawPolygon(g_polygons.back());
     fillPolygon1(g_polygons.back());
@@ -64,12 +64,12 @@ void display() {
 
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  
+
   for (int i = 0; i < g_polygons.size(); i++) {
     drawPolygon(g_polygons[i]);
     fillPolygon1(g_polygons[i]);
   }
-  
+
   glColor3f(0.0f, 0.0f, 0.0f);
   glPointSize(2);
   glBegin(GL_POINTS);
@@ -89,9 +89,9 @@ void resize(int width, int height) {
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-  glutInitWindowSize(500, 500);
-  glutInitWindowPosition(200, 200); 
-  
+  glutInitWindowSize(g_width, g_height);
+  glutInitWindowPosition(200, 200);
+
   glutCreateWindow("Polygon");
 
   if (argc >= 2) {
@@ -139,4 +139,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-

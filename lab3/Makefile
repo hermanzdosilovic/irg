@@ -17,7 +17,7 @@ $(DIRS):
 	mkdir -p $@
 
 $(EXECUTABLE): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $? $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(ODIR)/%.o: %.cpp $(DIRS) $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
