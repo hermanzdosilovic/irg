@@ -11,15 +11,15 @@ EXECUTABLE=task
 
 DIRS=$(ODIR)
 
-all: dirs task
+all: $(EXECUTABLE)
 
-dirs:
-	mkdir -p $(DIRS)
+$(DIRS):
+	mkdir -p $@
 
 $(EXECUTABLE): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(ODIR)/%.o: %.cpp $(DEPS)
+$(ODIR)/%.o: %.cpp $(DIRS) $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
 clean:
