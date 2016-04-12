@@ -6,9 +6,12 @@ Solutions of lab tasks from subject _[Interactive Computer Graphics](http://www.
 
 * [lab1](https://github.com/hermanzdosilovic/irg/tree/master/lab1) - Introduction to [GLM](http://glm.g-truc.net/0.9.7/index.html)
 * [lab2](https://github.com/hermanzdosilovic/irg/tree/master/lab2) - Implementing Bresenham's line [algorithm](https://github.com/hermanzdosilovic/irg/blob/master/lab2/task.cpp)
-* [lab3](https://github.com/hermanzdosilovic/irg/tree/master/lab3) - Convex polygon filling
+* [lab3](https://github.com/hermanzdosilovic/irg/tree/master/lab3) - Filling convex polygons
+* [lab4](https://github.com/hermanzdosilovic/irg/tree/master/lab4) - Drawing 3D objects
 
 ## Compiling and Running
+
+Make sure you have `g++`, `freeglut3` and `freeglut3-dev` installed.
 
 Every lab contains `Makefile`, use following commands for compile and run:
 
@@ -17,4 +20,4 @@ $ make
 $ ./task # or ./task1, ./task2, etc. if exists
 ```
 
-Use `make clean` for removing objects and executables.
+Use `make clean` for removing object files and executables.
