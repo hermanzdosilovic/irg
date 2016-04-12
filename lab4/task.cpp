@@ -139,7 +139,6 @@ int main(int argc, char **argv) {
   f = fopen(argv[2], "r");
   int number_of_points;
   fscanf(f, "%d", &number_of_points);
-  printf("%d\n", number_of_points);
   while (number_of_points--) {
     float x, y, z;
     fscanf(f, "%f%f%f", &x, &y, &z);
