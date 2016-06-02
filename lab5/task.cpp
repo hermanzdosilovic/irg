@@ -20,6 +20,8 @@ std::vector<Triangle> g_triangles;
 
 glm::vec4 g_camera, g_view;
 
+int g_bezier_index = -1;
+
 std::ostream &operator<< (std::ostream &out, const glm::mat4 &m) {
   out << "{";
   for (int row = 0; row < 4; row++) {
@@ -233,6 +235,16 @@ void keyboard(unsigned char key, int x, int y) {
                0,         0, 1, 0,
                0,         0, 0, 1
     ));
+  } else if (key == 'e') {
+    g_bezier_index++;
+    g_bezier_index %= g_bezier_points.size();
+    g_view = g_bezier_points[g_bezier_index];
+  } else if (key == 'q') {
+    g_bezier_index--;
+    if (g_bezier_index <= -1) {
+      g_bezier_index = g_bezier_points.size() - 1;
+    }
+    g_view = g_bezier_points[g_bezier_index];
   }
   glutPostRedisplay();
 }
