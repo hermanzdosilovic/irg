@@ -16,8 +16,8 @@ all: $(EXECUTABLE)
 $(DIRS):
 	mkdir -p $@
 
-$(EXECUTABLE): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+$(EXECUTABLE): %: $(ODIR)/%.o
+	$(CC) $(CFLAGS) -o $@ $@.cpp $(LDFLAGS)
 
 $(ODIR)/%.o: %.cpp $(DIRS) $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
