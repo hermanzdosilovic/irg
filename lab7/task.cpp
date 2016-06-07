@@ -177,6 +177,7 @@ void display() {
 	glLoadIdentity();
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
 
   glPushMatrix();
   glScalef(g_scale, g_scale, g_scale);
@@ -191,7 +192,7 @@ void display() {
   glColor3f(0.0f, 0.0f, 0.0f);
   glLineWidth(1);
   for (auto t : g_triangles) {
-    glBegin(GL_TRIANGLES);
+    glBegin(GL_POLYGON);
     glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
     glm::vec3 n = glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1));
     glm::vec4 c = (v1 + v2 + v3) / glm::vec4(3, 3, 3, 3);
@@ -348,7 +349,6 @@ int main(int argc, char **argv) {
   glutMouseFunc(mouse);
   glutMotionFunc(motion);
   glutKeyboardFunc(keyboard);
-  glEnable(GL_DEPTH_TEST);
   glutMainLoop();
 
   return 0;
