@@ -22,7 +22,7 @@ std::vector<Triangle> g_triangles;
 float g_min_x = FLT_MAX, g_min_y = FLT_MAX, g_min_z = FLT_MAX;
 float g_max_x = FLT_MIN, g_max_y = FLT_MIN, g_max_z = FLT_MIN;
 
-const int CONST_SHADING = 0, GOURAUD_SHADING = 1, PHONG_SHADING = 2;
+const int CONST_SHADING = 0, GOURAUD_SHADING = 1;
 int g_shading_mode = 0;
 
 glm::vec4 g_camera = glm::vec4(20, 20, 20, 1),
@@ -181,7 +181,7 @@ void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glPushMatrix();
   glScalef(g_scale, g_scale, g_scale);
@@ -295,7 +295,7 @@ void motion(int x, int y) {
 void keyboard(unsigned char key, int x, int y) {
   if (key == 'n' || key == 'N') {
     g_shading_mode++;
-    g_shading_mode %= 3;
+    g_shading_mode %= 2;
     glutPostRedisplay();
   }
 }
@@ -334,7 +334,7 @@ int main(int argc, char **argv) {
   g_scale = 2/fmaxf(g_size_x, fmaxf(g_size_y, g_size_z));
 
   glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
   glutInitWindowSize(g_width, g_height);
   glutInitWindowPosition(700, 100);
   glutCreateWindow("Objects");
@@ -343,6 +343,7 @@ int main(int argc, char **argv) {
   glutMouseFunc(mouse);
   glutMotionFunc(motion);
   glutKeyboardFunc(keyboard);
+  glEnable(GL_DEPTH_TEST);
   glutMainLoop();
 
   return 0;
