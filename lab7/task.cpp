@@ -8,6 +8,7 @@
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <float.h>
+#include <tuple>
 #include <map>
 
 int g_width = 600, g_height = 600;
@@ -132,11 +133,11 @@ glm::mat4 perspectiveTransformMatrix(glm::vec4 camera, glm::vec4 view) {
  }
 
 double intensity(glm::vec3 normal, glm::vec3 light) {
-  double Ia = 100;
-  double ka = 0.5;
+  double Ia = 150;
+  double ka = 0.2;
 
   double Ii = 250;
-  double kd = 0.6;
+  double kd = 0.8;
 
   normal = glm::normalize(normal);
   light = glm::normalize(light);
@@ -149,7 +150,6 @@ double intensity(glm::vec3 normal, glm::vec3 light) {
   return Ii*kd*LN + Ia*ka;
 }
 
-#include<tuple>
 std::map<std::tuple<float, float, float>, glm::vec3> pointNormalTable;
 glm::vec3 vertexNormal(glm::vec4 point) {
   if (pointNormalTable.find(std::make_tuple(point.x, point.y, point.z)) != pointNormalTable.end()) {
@@ -157,15 +157,10 @@ glm::vec3 vertexNormal(glm::vec4 point) {
   }
   glm::vec3 normal = glm::vec3(0, 0, 0);
 
-  glm::mat4 S = scaleMatrix(g_scale);
-  glm::mat4 T = viewTransformMatrix(g_camera, g_view);
-  glm::mat4 P = perspectiveTransformMatrix(g_camera, g_view);
-  glm::mat4 M = S*T*P;
-
   int number_of_polygons = 0;
   for (auto t : g_triangles) {
     if (t.v1 == point || t.v2 == point || t.v3 == point) {
-      glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
+      glm::vec4 v1 = t.v1, v2 = t.v2, v3 = t.v3;
       glm::vec3 n = glm::normalize(glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1)));
       normal += n;
       number_of_polygons++;
@@ -208,25 +203,25 @@ void display() {
 
     if (g_shading_mode == CONST_SHADING) {
       double I = intensity(n, glm::vec3(g_light - c));
-      glColor3ub(I/2, I/3, I/4);
+      glColor3ub(I, I, I);
       glVertex3f(t.v1.x, t.v1.y, t.v1.z);
 
-      glColor3ub(I/2, I/3, I/4);
+      glColor3ub(I, I, I);
       glVertex3f(t.v2.x, t.v2.y, t.v2.z);
 
-      glColor3ub(I/2, I/3, I/4);
+      glColor3ub(I, I, I);
       glVertex3f(t.v3.x, t.v3.y, t.v3.z);
     } else if (g_shading_mode == GOURAUD_SHADING) {
       double I1 = intensity(vertexNormal(t.v1), glm::vec3(g_light - c));
-      glColor3ub(I1/2, I1/3, I1/4);
+      glColor3ub(I1, I1, I1);
       glVertex3f(t.v1.x, t.v1.y, t.v1.z);
 
       double I2 = intensity(vertexNormal(t.v2), glm::vec3(g_light - c));
-      glColor3ub(I2/2, I2/3, I2/4);
+      glColor3ub(I2, I2, I2);
       glVertex3f(t.v2.x, t.v2.y, t.v2.z);
 
       double I3 = intensity(vertexNormal(t.v3), glm::vec3(g_light - c));
-      glColor3ub(I2/2, I2/3, I2/4);
+      glColor3ub(I3, I3, I3);
       glVertex3f(t.v3.x, t.v3.y, t.v3.z);
     }
     glEnd();
@@ -296,6 +291,16 @@ void keyboard(unsigned char key, int x, int y) {
   if (key == 'n' || key == 'N') {
     g_shading_mode++;
     g_shading_mode %= 2;
+    glutPostRedisplay();
+  } else if (key == 'h' || key == 'H') {
+    glm::mat4 R = glm::rotate(glm::mat4(), 0.523599f, glm::vec3(g_up)); // 30 degrees
+    g_light = g_light * R;
+    pointNormalTable = std::map<std::tuple<float, float, float>, glm::vec3>();
+    glutPostRedisplay();
+  } else if (key == 'l' || key == 'L') {
+    glm::mat4 R = glm::rotate(glm::mat4(), -0.523599f, glm::vec3(g_up)); // -30 degrees
+    g_light = g_light * R;
+    pointNormalTable = std::map<std::tuple<float, float, float>, glm::vec3>();
     glutPostRedisplay();
   }
 }
