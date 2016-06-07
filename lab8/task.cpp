@@ -54,7 +54,7 @@ void display() {
         if (n == -1) {
           glColor3f(0, 0, 0);
         } else {
-          glColor3f((double)n/g_max_iterations/10.0,   (double)n/g_max_iterations, (double)n/g_max_iterations);
+          glColor3f(1.0*n/g_max_iterations/10.0, 3.0*n/g_max_iterations, 5.0*n/g_max_iterations);
         }
         glVertex2i(x, y);
     }
@@ -70,6 +70,12 @@ void keyboard(unsigned char key, int x, int y) {
     g_fractal_mode %= 2;
     glutPostRedisplay();
   }
+}
+
+void resize(int width, int height) {
+  g_width = width;
+  g_height = height;
+  glutPostRedisplay();
 }
 
 int main(int argc, char **argv) {
@@ -88,6 +94,7 @@ int main(int argc, char **argv) {
   glutCreateWindow("Objects");
   glutDisplayFunc(display);
   glutKeyboardFunc(keyboard);
+  glutReshapeFunc(resize);
   glutMainLoop();
 
   return 0;
