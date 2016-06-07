@@ -6,6 +6,7 @@
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/matrix.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 int g_width = 600, g_height = 600;
 
@@ -17,7 +18,8 @@ std::vector<glm::vec4> g_points, g_polygon;
 std::vector<Triangle> g_triangles;
 
 glm::vec4 g_camera = glm::vec4(20, 20, 20, 1),
-          g_view = glm::vec4(0, 0, 0, 1);
+          g_view = glm::vec4(0, 0, 0, 1),
+          g_up = glm::vec4(0, 0, 1, 1);
 
 std::ostream &operator<< (std::ostream &out, const glm::mat4 &m) {
   out << "{";
@@ -40,21 +42,116 @@ std::ostream &operator<< (std::ostream &out, const glm::vec4 &v) {
   return out;
 }
 
+glm::mat4 viewTransformMatrix(glm::vec4 camera, glm::vec4 view) {
+  glm::mat4 T1 = glm::transpose(glm::mat4(
+            1,         0,         0, 0,
+            0,         1,         0, 0,
+            0,         0,         1, 0,
+    -camera.x, -camera.y, -camera.z, 1
+  ));
+  view = view * T1;
+
+
+  double s;
+  glm::mat4 T2;
+  if (view.x || view.y) {
+    s = sqrt(pow(view.x, 2) + pow(view.y, 2));
+    double sinA = view.y / s;
+    double cosA = view.x / s;
+    T2 = glm::transpose(glm::mat4(
+      cosA, -sinA,  0, 0,
+      sinA,  cosA,  0, 0,
+         0,     0,  1, 0,
+         0,     0,  0, 1
+    ));
+  } else {
+    T2 = glm::mat4();
+  }
+  view = view * T2;
+
+
+  s = sqrt(pow(view.x, 2) + pow(view.z, 2));
+  double cosB = view.z / s;
+  double sinB = view.x / s;
+  glm::mat4 T3 = glm::transpose(glm::mat4(
+     cosB, 0, sinB, 0,
+        0, 1,    0, 0,
+    -sinB, 0, cosB, 0,
+        0, 0,    0, 1
+  ));
+  view = view * T3;
+
+
+  glm::mat4 T4 = glm::transpose(glm::mat4(
+    0, -1, 0, 0,
+    1,  0, 0, 0,
+    0,  0, 1, 0,
+    0,  0, 0, 1
+  ));
+
+
+  glm::mat4 T5 = glm::transpose(glm::mat4(
+    -1, 0, 0, 0,
+     0, 1, 0, 0,
+     0, 0, 1, 0,
+     0, 0, 0, 1
+  ));
+
+  glm::mat4 T = T1 * T2 * T3 * T4 * T5;
+  return T;
+}
+
+glm::mat4 perspectiveTransformMatrix(glm::vec4 camera, glm::vec4 view) {
+  double H = glm::distance(camera, view);
+  return glm::transpose(glm::mat4(
+    1, 0, 0,   0,
+    0, 1, 0,   0,
+    0, 0, 0, 1/H,
+    0, 0, 0,   0
+  ));
+ }
+
+ glm::mat4 scaleMatrix(float ratio) {
+   return glm::transpose(glm::mat4(
+     ratio,     0,     0, 0,
+         0, ratio,     0, 0,
+         0,     0, ratio, 0,
+         0,     0,     0, 1
+   ));
+ }
+
+glm::vec4 transformPoint(glm::vec4 point, glm::mat4 matrix) {
+  glm::vec4 transformedPoint = point * matrix;
+  return transformedPoint / transformedPoint.w;
+}
 
 void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-  gluLookAt(g_camera.x, g_camera.y, g_camera.z, g_view.x, g_view.y, g_view.z, 0, 1, 0);
+  gluLookAt(g_camera.x, g_camera.y, g_camera.z, g_view.x, g_view.y, g_view.z, g_up.x, g_up.y, g_up.z);
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glScalef(10, 10, 10);
-
-  std::cout << g_camera << std::endl;
+ 
+  glm::mat4 S = scaleMatrix(10);
+  glm::mat4 T = viewTransformMatrix(g_camera, g_view);
+  glm::mat4 P = perspectiveTransformMatrix(g_camera, g_view);
+  glm::mat4 transformMatrix = S*T*P;
 
   glColor3f(0.0f, 0.0f, 0.0f);
   glLineWidth(1);
   glBegin(GL_LINES);
   for (auto t : g_triangles) {
+    glm::vec4 v1 = transformPoint(t.v1, transformMatrix);
+    glm::vec4 v2 = transformPoint(t.v2, transformMatrix);
+    glm::vec4 v3 = transformPoint(t.v3, transformMatrix);
+    glm::vec3 n = glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1));
+    glm::vec4 c = glm::vec4((v1.x + v2.x + v3.x)/3, (v1.y + v2.y + v3.y)/3, (v1.z + v2.z + v3.z)/3, 1);
+    glm::vec3 p = glm::vec3(g_camera - c);
+    if (glm::dot(n, p) < 0) {
+      continue;
+    }
+
     glVertex3f(t.v1.x, t.v1.y, t.v1.z);
     glVertex3f(t.v2.x, t.v2.y, t.v2.z);
 
@@ -79,13 +176,17 @@ void display() {
   glFlush();
 }
 
+void updatePerspective() {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+  glFrustum(-1, 1, -1, 1, glm::distance(g_camera, g_view)/10, 100*glm::distance(g_camera, g_view));
+}
+
 void resize(int width, int height) {
   g_width = width;
   g_height = height;
   glViewport(0, 0, g_width, g_height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-  glFrustum(-1, 1, -1, 1, glm::distance(g_camera, g_view)/10, 10*glm::distance(g_camera, g_view));
+  updatePerspective();
 }
 
 int g_motion_start = 0, g_x = 0;
@@ -93,31 +194,28 @@ void mouse(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     g_motion_start = 1;
     g_x = x;
-  } else {
+    glutPostRedisplay();
+  } else if (button == 3 || button == 4) {
     g_motion_start = 0;
     glm::vec4 n = glm::normalize(g_view - g_camera);
     if (button == 3) {
       g_camera += n;
-    } else if (button == 4) {
+    } else {
       g_camera -= n;
     }
+    glutPostRedisplay();
+  } else {
+    g_motion_start = 0;
   }
-  glutPostRedisplay();
 }
 
 void motion(int x, int y) {
   if (!g_motion_start) {
     return;
   }
-  double alpha = - (g_x - x) / glm::distance(g_camera, glm::vec4(0, 0, 0, 1));
-
-  glm::mat4 Z = glm::transpose(glm::mat4(
-     cos(alpha), 0, sin(alpha), 0,
-              0, 1,          0, 0,
-    -sin(alpha), 0, cos(alpha), 0,
-              0, 0,          0, 1
-  ));
-  g_camera = g_camera * Z;
+  float alpha = -(g_x - x) / glm::distance(g_camera, g_view);
+  glm::mat4 R = glm::rotate(glm::mat4(), alpha, glm::vec3(g_up));
+  g_camera = g_camera * R;
   g_x = x;
 
   glutPostRedisplay();
