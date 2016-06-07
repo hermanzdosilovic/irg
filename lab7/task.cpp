@@ -8,6 +8,7 @@
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <float.h>
+#include <map>
 
 int g_width = 600, g_height = 600;
 
@@ -21,9 +22,15 @@ std::vector<Triangle> g_triangles;
 float g_min_x = FLT_MAX, g_min_y = FLT_MAX, g_min_z = FLT_MAX;
 float g_max_x = FLT_MIN, g_max_y = FLT_MIN, g_max_z = FLT_MIN;
 
+const int CONST_SHADING = 0, GOURAUD_SHADING = 1, PHONG_SHADING = 2;
+int g_shading_mode = 0;
+
 glm::vec4 g_camera = glm::vec4(20, 20, 20, 1),
           g_view = glm::vec4(0, 0, 0, 1),
+          g_light = glm::vec4(20, 20, 20, 1),
           g_up = glm::vec4(0, 0, 1, 1);
+
+float g_size_x, g_size_y, g_size_z, g_center_x, g_center_y, g_center_z, g_scale;
 
 std::ostream &operator<< (std::ostream &out, const glm::mat4 &m) {
   out << "{";
@@ -45,6 +52,7 @@ std::ostream &operator<< (std::ostream &out, const glm::vec4 &v) {
   out << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
   return out;
 }
+
 glm::mat4 viewTransformMatrix(glm::vec4 camera, glm::vec4 view) {
   glm::mat4 T1 = glm::transpose(glm::mat4(
             1,         0,         0, 0,
@@ -123,27 +131,64 @@ glm::mat4 perspectiveTransformMatrix(glm::vec4 camera, glm::vec4 view) {
    ));
  }
 
+double intensity(glm::vec3 normal, glm::vec3 light) {
+  double Ia = 100;
+  double ka = 0.5;
+
+  double Ii = 250;
+  double kd = 0.6;
+
+  normal = glm::normalize(normal);
+  light = glm::normalize(light);
+
+  double LN = glm::dot(normal, light);
+  if (LN < 0) {
+    LN = 0;
+  }
+
+  return Ii*kd*LN + Ia*ka;
+}
+
+#include<tuple>
+std::map<std::tuple<float, float, float>, glm::vec3> pointNormalTable;
+glm::vec3 vertexNormal(glm::vec4 point) {
+  if (pointNormalTable.find(std::make_tuple(point.x, point.y, point.z)) != pointNormalTable.end()) {
+    return pointNormalTable[std::make_tuple(point.x, point.y, point.z)];
+  }
+  glm::vec3 normal = glm::vec3(0, 0, 0);
+
+  glm::mat4 S = scaleMatrix(g_scale);
+  glm::mat4 T = viewTransformMatrix(g_camera, g_view);
+  glm::mat4 P = perspectiveTransformMatrix(g_camera, g_view);
+  glm::mat4 M = S*T*P;
+
+  int number_of_polygons = 0;
+  for (auto t : g_triangles) {
+    if (t.v1 == point || t.v2 == point || t.v3 == point) {
+      glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
+      glm::vec3 n = glm::normalize(glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1)));
+      normal += n;
+      number_of_polygons++;
+    }
+  }
+
+  normal /= glm::vec3(1.0f/number_of_polygons, 1.0f/number_of_polygons, 1.0f/number_of_polygons);
+  pointNormalTable[std::make_tuple(point.x, point.y, point.z)] = normal;
+  return normal;
+}
+
 void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT/* | GL_DEPTH_BUFFER_BIT*/);
-
-  float size_x = g_max_x - g_min_x;
-  float size_y = g_max_y - g_min_y;
-  float size_z = g_max_z - g_min_z;
-  float center_x = (g_max_x + g_min_x)/2;
-  float center_y = (g_max_y + g_min_y)/2;
-  float center_z = (g_max_z + g_min_z)/2;
-  float scale = 2/fmaxf(size_x, fmaxf(size_y, size_z));
+  glClear(GL_COLOR_BUFFER_BIT);
 
   glPushMatrix();
-  glScalef(scale, scale, scale);
+  glScalef(g_scale, g_scale, g_scale);
   gluLookAt(g_camera.x, g_camera.y, g_camera.z, g_view.x, g_view.y, g_view.z, g_up.x, g_up.y, g_up.z);
-  glTranslatef(-center_x, -center_y, -center_z);
-  // glCullFace(GL_BACK);
+  glTranslatef(-g_center_x, -g_center_y, -g_center_z);
 
-  glm::mat4 S = scaleMatrix(scale);
+  glm::mat4 S = scaleMatrix(g_scale);
   glm::mat4 T = viewTransformMatrix(g_camera, g_view);
   glm::mat4 P = perspectiveTransformMatrix(g_camera, g_view);
   glm::mat4 M = S*T*P;
@@ -151,7 +196,7 @@ void display() {
   glColor3f(0.0f, 0.0f, 0.0f);
   glLineWidth(1);
   for (auto t : g_triangles) {
-    glBegin(GL_LINES);
+    glBegin(GL_TRIANGLES);
     glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
     glm::vec3 n = glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1));
     glm::vec4 c = (v1 + v2 + v3) / glm::vec4(3, 3, 3, 3);
@@ -161,14 +206,29 @@ void display() {
       continue;
     }
 
-    glVertex3f(t.v1.x, t.v1.y, t.v1.z);
-    glVertex3f(t.v2.x, t.v2.y, t.v2.z);
+    if (g_shading_mode == CONST_SHADING) {
+      double I = intensity(n, glm::vec3(g_light - c));
+      glColor3ub(I/2, I/3, I/4);
+      glVertex3f(t.v1.x, t.v1.y, t.v1.z);
 
-    glVertex3f(t.v2.x, t.v2.y, t.v2.z);
-    glVertex3f(t.v3.x, t.v3.y, t.v3.z);
+      glColor3ub(I/2, I/3, I/4);
+      glVertex3f(t.v2.x, t.v2.y, t.v2.z);
 
-    glVertex3f(t.v3.x, t.v3.y, t.v3.z);
-    glVertex3f(t.v1.x, t.v1.y, t.v1.z);
+      glColor3ub(I/2, I/3, I/4);
+      glVertex3f(t.v3.x, t.v3.y, t.v3.z);
+    } else if (g_shading_mode == GOURAUD_SHADING) {
+      double I1 = intensity(vertexNormal(t.v1), glm::vec3(g_light - c));
+      glColor3ub(I1/2, I1/3, I1/4);
+      glVertex3f(t.v1.x, t.v1.y, t.v1.z);
+
+      double I2 = intensity(vertexNormal(t.v2), glm::vec3(g_light - c));
+      glColor3ub(I2/2, I2/3, I2/4);
+      glVertex3f(t.v2.x, t.v2.y, t.v2.z);
+
+      double I3 = intensity(vertexNormal(t.v3), glm::vec3(g_light - c));
+      glColor3ub(I2/2, I2/3, I2/4);
+      glVertex3f(t.v3.x, t.v3.y, t.v3.z);
+    }
     glEnd();
   }
   glPopMatrix();
@@ -191,7 +251,6 @@ void updatePerspective(int width, int height) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
   gluPerspective(45.0, (float)width/height, 1, 100);
-  // glFrustum(-1, 1, -1, 1, 1, 100);
 }
 
 void resize(int width, int height) {
@@ -228,10 +287,17 @@ void motion(int x, int y) {
   float alpha = -(g_x - x) / glm::distance(g_camera, g_view);
   glm::mat4 R = glm::rotate(glm::mat4(), alpha, glm::vec3(g_up));
   g_camera = g_camera * R;
-  g_up = g_up * R;
   g_x = x;
 
   glutPostRedisplay();
+}
+
+void keyboard(unsigned char key, int x, int y) {
+  if (key == 'n' || key == 'N') {
+    g_shading_mode++;
+    g_shading_mode %= 3;
+    glutPostRedisplay();
+  }
 }
 
 int main(int argc, char **argv) {
@@ -253,11 +319,22 @@ int main(int argc, char **argv) {
   }
   fclose(f);
 
-  std::cout << "MIN: " << g_min_x << " " << g_min_y << " " << g_min_z << std::endl;
-  std::cout << "MAX: " << g_max_x << " " << g_max_y << " " << g_max_z << std::endl;
+  f = fopen(argv[2], "r");
+  float x, y, z;
+  fscanf(f, "%f %f %f", &x, &y, &z);
+  g_light = glm::vec4(x, y, z, 1);
+  fclose(f);
+
+  g_size_x = g_max_x - g_min_x;
+  g_size_y = g_max_y - g_min_y;
+  g_size_z = g_max_z - g_min_z;
+  g_center_x = (g_max_x + g_min_x)/2;
+  g_center_y = (g_max_y + g_min_y)/2;
+  g_center_z = (g_max_z + g_min_z)/2;
+  g_scale = 2/fmaxf(g_size_x, fmaxf(g_size_y, g_size_z));
 
   glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
   glutInitWindowSize(g_width, g_height);
   glutInitWindowPosition(700, 100);
   glutCreateWindow("Objects");
@@ -265,9 +342,7 @@ int main(int argc, char **argv) {
   glutReshapeFunc(resize);
   glutMouseFunc(mouse);
   glutMotionFunc(motion);
-  // glEnable(GL_CULL_FACE);
-  // glEnable(GL_DEPTH_TEST);
-  // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glutKeyboardFunc(keyboard);
   glutMainLoop();
 
   return 0;
