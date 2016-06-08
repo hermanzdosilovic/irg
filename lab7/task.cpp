@@ -8,8 +8,6 @@
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <float.h>
-#include <tuple>
-#include <map>
 
 int g_width = 600, g_height = 600;
 
@@ -24,12 +22,13 @@ float g_min_x = FLT_MAX, g_min_y = FLT_MAX, g_min_z = FLT_MAX;
 float g_max_x = FLT_MIN, g_max_y = FLT_MIN, g_max_z = FLT_MIN;
 
 const int WIRE = 0, CONST_SHADING = 1, GOURAUD_SHADING = 2;
-int g_mode = 0;
+int g_mode = 0; // WIRE, CONST_SHADING or GOURAUD_SHADING
+bool g_gl_culling = false;
 
-glm::vec4 g_camera = glm::vec4(20, 0, 0, 1),
+glm::vec4 g_camera = glm::vec4(20, 0, 5, 1),
           g_view = glm::vec4(0, 0, 0, 1),
           g_light = glm::vec4(20, 20, 20, 1), // updated with data from light.txt
-          g_up = glm::vec4(0, 1, 0, 1);
+          g_up = glm::vec4(0, 0, 1, 1);
 
 float g_size_x, g_size_y, g_size_z, g_center_x, g_center_y, g_center_z, g_scale;
 
@@ -51,17 +50,13 @@ double intensity(glm::vec3 normal, glm::vec3 light_polygon) {
   return Ii*kd*LN + Ia*ka;
 }
 
-std::map<std::tuple<float, float, float>, glm::vec3> pointNormalTable;
-glm::vec3 vertexNormal(glm::vec4 point) {
-  if (pointNormalTable.find(std::make_tuple(point.x, point.y, point.z)) != pointNormalTable.end()) {
-    return pointNormalTable[std::make_tuple(point.x, point.y, point.z)];
-  }
+glm::vec3 vertexNormal(glm::vec4 point, glm::mat4 M) {
   glm::vec3 normal = glm::vec3(0, 0, 0);
 
   int number_of_polygons = 0;
   for (auto t : g_triangles) {
     if (t.v1 == point || t.v2 == point || t.v3 == point) {
-      glm::vec4 v1 = t.v1, v2 = t.v2, v3 = t.v3;
+      glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
       glm::vec3 n = glm::normalize(glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1)));
       normal += n;
       number_of_polygons++;
@@ -69,28 +64,11 @@ glm::vec3 vertexNormal(glm::vec4 point) {
   }
 
   normal /= glm::vec3(1.0f/number_of_polygons, 1.0f/number_of_polygons, 1.0f/number_of_polygons);
-  pointNormalTable[std::make_tuple(point.x, point.y, point.z)] = normal;
   return normal;
 }
 
 void color(double intensity) {
   glColor3ub(intensity, intensity, intensity);
-}
-
-std::ostream &operator<< (std::ostream &out, const glm::mat4 &m) {
-  for (int row = 0; row < 4; row++) {
-    for (int col = 0; col < 4; col++) {
-      out << m[col][row] << "\t";
-    }
-    out << std::endl;
-  }
-
-  return out;
-}
-
-std::ostream &operator<< (std::ostream &out, const glm::vec4 &v) {
-  out << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
-  return out;
 }
 
 void display() {
@@ -99,7 +77,12 @@ void display() {
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
+
+  if (g_gl_culling) {
+    glEnable(GL_CULL_FACE);
+  } else {
+    glDisable(GL_CULL_FACE);
+  }
   glCullFace(GL_BACK);
 
   if (g_mode == WIRE) {
@@ -115,7 +98,7 @@ void display() {
   glm::mat4 S = glm::scale(glm::mat4(), glm::vec3(g_scale, g_scale, g_scale));
   glm::mat4 L = glm::lookAt(glm::vec3(g_camera), glm::vec3(g_view), glm::vec3(g_up));
   glm::mat4 T = glm::translate(glm::mat4(), glm::vec3(-g_center_x, -g_center_y, -g_center_z));
-  // glm::mat4 P = glm::perspective(glm::radians(45.0f), (float)g_width/g_height, 1.0f, 100.0f);
+  glm::mat4 P = glm::perspective(glm::radians(45.0f), (float)g_width/g_height, 1.0f, 100.0f); // not in use
   glm::mat4 M = glm::transpose(S*L*T);
 
   for (auto t : g_triangles) {
@@ -123,7 +106,15 @@ void display() {
     glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
     glm::vec3 n = glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1));
     glm::vec4 c = (v1 + v2 + v3) / glm::vec4(3, 3, 3, 3);
-    glm::vec3 light_polygon = glm::vec3(g_light*M - c);
+    glm::vec3 light_polygon = glm::vec3(g_light*M - c); // camera is transformed to achieve
+                                                        // effect of moving around object when and not
+                                                        // rotating object
+    glm::vec3 camera_polygon = glm::vec3(g_camera - c);
+
+    if (!g_gl_culling && glm::dot(camera_polygon, n)/glm::distance(camera_polygon, n) < 0) {
+      glEnd();
+      continue;
+    }
 
     if (g_mode == WIRE) {
       glColor3f(0.0f, 0.0f, 0.0f);
@@ -137,27 +128,28 @@ void display() {
       glVertex3f(t.v2.x, t.v2.y, t.v2.z);
       glVertex3f(t.v3.x, t.v3.y, t.v3.z);
     } else {
-      double I1 = intensity(vertexNormal(t.v1), light_polygon);
+      double I1 = intensity(vertexNormal(t.v1, M), light_polygon);
       color(I1);
       glVertex3f(t.v1.x, t.v1.y, t.v1.z);
 
-      double I2 = intensity(vertexNormal(t.v2), light_polygon);
+      double I2 = intensity(vertexNormal(t.v2, M), light_polygon);
       color(I2);
       glVertex3f(t.v2.x, t.v2.y, t.v2.z);
 
-      double I3 = intensity(vertexNormal(t.v3), light_polygon);
+      double I3 = intensity(vertexNormal(t.v3, M), light_polygon);
       color(I3);
       glVertex3f(t.v3.x, t.v3.y, t.v3.z);
     }
     glEnd();
   }
+
   glFlush();
 }
 
 void updatePerspective() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-  gluPerspective(45.0f, (float)g_width/g_height, 1.0f, 100.0f);
+  gluPerspective(45.0f, (float)g_width/g_height, 1, 100);
 }
 
 void resize(int width, int height) {
@@ -209,6 +201,9 @@ void keyboard(unsigned char key, int x, int y) {
   } else if (key == 'l' || key == 'L') {
     glm::mat4 R = glm::rotate(glm::mat4(), -0.523599f, glm::vec3(g_up)); // -30 degrees
     g_light = g_light * R;
+    glutPostRedisplay();
+  } else if (key == 'c' || key == 'C') {
+    g_gl_culling = !g_gl_culling;
     glutPostRedisplay();
   }
 }
