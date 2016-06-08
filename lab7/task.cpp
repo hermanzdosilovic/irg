@@ -77,6 +77,22 @@ void color(double intensity) {
   glColor3ub(intensity, intensity, intensity);
 }
 
+std::ostream &operator<< (std::ostream &out, const glm::mat4 &m) {
+  for (int row = 0; row < 4; row++) {
+    for (int col = 0; col < 4; col++) {
+      out << m[col][row] << "\t";
+    }
+    out << std::endl;
+  }
+
+  return out;
+}
+
+std::ostream &operator<< (std::ostream &out, const glm::vec4 &v) {
+  out << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
+  return out;
+}
+
 void display() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -96,11 +112,18 @@ void display() {
   gluLookAt(g_camera.x, g_camera.y, g_camera.z, g_view.x, g_view.y, g_view.z, g_up.x, g_up.y, g_up.z);
   glTranslatef(-g_center_x, -g_center_y, -g_center_z);
 
+  glm::mat4 S = glm::scale(glm::mat4(), glm::vec3(g_scale, g_scale, g_scale));
+  glm::mat4 L = glm::lookAt(glm::vec3(g_camera), glm::vec3(g_view), glm::vec3(g_up));
+  glm::mat4 T = glm::translate(glm::mat4(), glm::vec3(-g_center_x, -g_center_y, -g_center_z));
+  // glm::mat4 P = glm::perspective(glm::radians(45.0f), (float)g_width/g_height, 1.0f, 100.0f);
+  glm::mat4 M = glm::transpose(S*L*T);
+
   for (auto t : g_triangles) {
     glBegin(GL_POLYGON);
-    glm::vec3 n = glm::cross(glm::vec3(t.v2 - t.v1), glm::vec3(t.v3 - t.v1));
-    glm::vec4 c = (t.v1 + t.v2 + t.v3) / glm::vec4(3, 3, 3, 3);
-    glm::vec3 light_polygon = glm::vec3(g_light - c);
+    glm::vec4 v1 = t.v1*M, v2 = t.v2*M, v3 = t.v3*M;
+    glm::vec3 n = glm::cross(glm::vec3(v2 - v1), glm::vec3(v3 - v1));
+    glm::vec4 c = (v1 + v2 + v3) / glm::vec4(3, 3, 3, 3);
+    glm::vec3 light_polygon = glm::vec3(g_light*M - c);
 
     if (g_mode == WIRE) {
       glColor3f(0.0f, 0.0f, 0.0f);
@@ -131,17 +154,17 @@ void display() {
   glFlush();
 }
 
-void updatePerspective(int width, int height) {
+void updatePerspective() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-  gluPerspective(45.0, (float)width/height, 1, 100);
+  gluPerspective(45.0f, (float)g_width/g_height, 1.0f, 100.0f);
 }
 
 void resize(int width, int height) {
   g_width = width;
   g_height = height;
   glViewport(0, 0, g_width, g_height);
-  updatePerspective(width, height);
+  updatePerspective();
 }
 
 int g_motion_start = 0, g_x = 0;
@@ -149,7 +172,6 @@ void mouse(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     g_motion_start = 1;
     g_x = x;
-    glutPostRedisplay();
   } else if (button == 3 || button == 4) {
     g_motion_start = 0;
     glm::vec4 n = glm::normalize(g_view - g_camera);
