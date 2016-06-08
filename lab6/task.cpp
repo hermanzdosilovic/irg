@@ -178,8 +178,9 @@ void display() {
     glm::vec4 v3 = transformPoint(t.v3, transformMatrix);
 
     glm::vec3 n = glm::cross(glm::vec3(v3 - v1), glm::vec3(v3 - v2));
-    glm::vec3 np = glm::vec3(g_camera - g_view);
-    if (glm::dot(n, np) < 0) {
+    glm::vec4 c = (v1 + v2 + v3) / glm::vec4(3, 3, 3, 3);
+    glm::vec3 np = glm::vec3(g_camera - c);
+    if (glm::dot(n, np)/glm::distance(n, np) < 0) {
       continue;
     }
 
