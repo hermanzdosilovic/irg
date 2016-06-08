@@ -1,19 +1,19 @@
 #include <GL/freeglut.h>
 #include <iostream>
+#include <cmath>
 
 int g_width = 500, g_height = 500;
-
 double g_epsilon, g_complex_const_re, g_complex_const_im, g_u_min, g_u_max, g_v_min, g_v_max;
 int g_max_iterations;
-
 int g_fractal_mode = 0;
+const int ZOOM_IN = 1, ZOOM_OUT = -1;
 
 int divergence_test(double re, double im, int limit) {
   double _re, _im;
-  if (!g_fractal_mode) {
+  if (!g_fractal_mode) { // Mandelbrot
     _re = 0;
     _im = 0;
-  } else {
+  } else { // Julia
     _re = re;
     _im = im;
     re = g_complex_const_re;
@@ -32,6 +32,38 @@ int divergence_test(double re, double im, int limit) {
   return -1;
 }
 
+double complex_x(int x) {
+  return (double)(g_u_max - g_u_min)*x/g_width + g_u_min;
+}
+
+double complex_y(int y) {
+  return (double)(g_v_max - g_v_min)*y/g_height + g_v_min;
+}
+
+void scale_complex_plane(int f) { // f is 1 or -1
+    double d;
+
+    d = (g_u_max - g_u_min)/10;
+    g_u_min -= f*d;
+    g_u_max += f*d;
+
+    d = (g_v_max - g_v_min)/10;
+    g_v_min -= f*d;
+    g_v_max += f*d;
+}
+
+void center_complex_plane(int x, int y) {
+    double u = complex_x(x);
+    double v = complex_y(y);
+    double center_u = complex_x(g_width/2);
+    double center_v = complex_y(g_height/2);
+    double du = center_u - u;
+    double dv = center_v - v;
+
+    g_u_min -= du; g_u_max -= du;
+    g_v_min += dv; g_v_max += dv;
+}
+
 void display() {
   glViewport(0, 0, g_width, g_height);
 	glMatrixMode(GL_PROJECTION);
@@ -47,16 +79,16 @@ void display() {
   glBegin(GL_POINTS);
   for (int y = 0; y < g_height; y++) {
     for (int x = 0; x < g_width; x++) {
-        double u = (double)(g_u_max - g_u_min)*x/g_width + g_u_min;
-        double v = (double)(g_v_max - g_v_min)*y/g_height + g_v_min;
+      double u = complex_x(x);
+      double v = complex_y(y);
 
-        int n = divergence_test(u, v, g_max_iterations);
-        if (n == -1) {
-          glColor3f(0, 0, 0);
-        } else {
-          glColor3f(1.0*n/g_max_iterations/10.0, 3.0*n/g_max_iterations, 5.0*n/g_max_iterations);
-        }
-        glVertex2i(x, y);
+      int n = divergence_test(u, v, g_max_iterations);
+      if (n == -1) {
+        glColor3f(0, 0, 0);
+      } else {
+        glColor3f(1.0*n/g_max_iterations, 3.0*n/g_max_iterations, 8.0*n/g_max_iterations);
+      }
+      glVertex2i(x, y);
     }
   }
   glEnd();
@@ -66,8 +98,7 @@ void display() {
 
 void keyboard(unsigned char key, int x, int y) {
   if (key == 'n' || key == 'N') {
-    g_fractal_mode++;
-    g_fractal_mode %= 2;
+    g_fractal_mode = (g_fractal_mode + 1)%2;
     glutPostRedisplay();
   }
 }
@@ -76,6 +107,19 @@ void resize(int width, int height) {
   g_width = width;
   g_height = height;
   glutPostRedisplay();
+}
+
+void mouse(int button, int state, int x, int y) {
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    center_complex_plane(x, y);
+    glutPostRedisplay();
+  } else if (button == 3) {
+    scale_complex_plane(ZOOM_IN);
+    glutPostRedisplay();
+  } else if (button == 4) {
+    scale_complex_plane(ZOOM_OUT);
+    glutPostRedisplay();
+  }
 }
 
 int main(int argc, char **argv) {
@@ -91,9 +135,10 @@ int main(int argc, char **argv) {
   glutInitWindowSize(g_width, g_height);
   glutInitWindowPosition(700, 100);
 
-  glutCreateWindow("Objects");
+  glutCreateWindow("Fractals");
   glutDisplayFunc(display);
   glutKeyboardFunc(keyboard);
+  glutMouseFunc(mouse);
   glutReshapeFunc(resize);
   glutMainLoop();
 
